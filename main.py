@@ -101,12 +101,11 @@ def eval(model_path, param_path, src_dict_path, target_dict_path):
                 'model_output': output_s,
                 'BLEU-4': current_bleu
             }
-            # For debug usage
-            if current_bleu != 0:
-                print(f'Src: {current_result["src"]}')
-                print(f'Result: {current_result["model_output"]}')
-                print(f'Target: {current_result["target"]}')
-                print(f'BLEU-4: {current_result["BLEU-4"]}')
+            # if current_bleu != 0:
+            #     print(f'Src: {current_result["src"]}')
+            #     print(f'Result: {current_result["model_output"]}')
+            #     print(f'Target: {current_result["target"]}')
+            #     print(f'BLEU-4: {current_result["BLEU-4"]}')
                 # print(f'Src: {current_result["src"]}, Result: {current_result["model_output"]}, Target: {current_result["target"]}, BLEU-4: {current_result["BLEU-4"]}')
             results.append(current_result)
     
