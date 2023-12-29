@@ -31,7 +31,7 @@ DEC_HID_DIM = 256
 ENC_DROPOUT = 0.5
 DEC_DROPOUT = 0.5
 MAX_LENGTH = 50
-LR = 1e-4
+LR = 5e-4
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -245,7 +245,7 @@ def train(model, param_path, src_dict_path, target_dict_path, reload=False):
         
         val_epoch_loss = 0
         for src, src_l, target, target_l in tqdm(batch_valid, desc='Valid Batch'):
-            # model.eval()
+            model.eval()
             src = torch.from_numpy(src).to(device).long()
             src_l = torch.from_numpy(src_l).long()#.to(device)
             target = torch.from_numpy(target).to(device).long()
@@ -264,10 +264,6 @@ def train(model, param_path, src_dict_path, target_dict_path, reload=False):
             # print(output.shape)
             
             loss = loss_fn(output, target)
-            opt.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
-            opt.step()
             
             val_epoch_loss = val_epoch_loss + loss.item()
             torch.cuda.empty_cache()
