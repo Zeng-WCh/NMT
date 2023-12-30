@@ -1,4 +1,5 @@
 import argparse
+import matplotlib.pyplot as plt
 import json
 import torch
 import pickle
@@ -34,6 +35,32 @@ MAX_LENGTH = 50
 LR = 5e-4
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+def plot_loss(loss_path, output_path, title: str=None, xlabel: str=None, ylabel: str=None):
+    with open(loss_path, 'r') as f:
+        lines = f.readlines()
+    
+    
+    for i in range(len(lines)):
+        # print(lines[i])
+        lines[i] = float(lines[i].strip().split(':')[-1].strip())
+        # print(lines[i])
+        # exit()
+    
+    # Create labels
+    if title is not None:
+        plt.title(title)
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    # Plot and dump
+    plt.plot(lines, label='Loss')
+    if title is not None or xlabel is not None or ylabel is not None:
+        plt.legend()
+    plt.savefig(output_path)
+    plt.close()
+    plt.cla()
 
 
 def create_mask(src, padding):
@@ -101,12 +128,7 @@ def eval(model_path, param_path, src_dict_path, target_dict_path):
                 'model_output': output_s,
                 'BLEU-4': current_bleu
             }
-            # if current_bleu != 0:
-            #     print(f'Src: {current_result["src"]}')
-            #     print(f'Result: {current_result["model_output"]}')
-            #     print(f'Target: {current_result["target"]}')
-            #     print(f'BLEU-4: {current_result["BLEU-4"]}')
-                # print(f'Src: {current_result["src"]}, Result: {current_result["model_output"]}, Target: {current_result["target"]}, BLEU-4: {current_result["BLEU-4"]}')
+            
             results.append(current_result)
     
     bleu = bleu_score(pred_target, actual_target)
@@ -140,11 +162,11 @@ def generate_data():
     with open('./train/dataset.pkl', 'wb') as f:
         pickle.dump(train_sens, f)
     
-    with open('./test/dataset.pkl', 'wb') as f:
-        pickle.dump(test_sens, f)
-    
     with open('./valid/dataset.pkl', 'wb') as f:
         pickle.dump(valid_sens, f)
+    
+    with open('./test/dataset.pkl', 'wb') as f:
+        pickle.dump(test_sens, f)
         
     with open('./src_dict.pkl', 'wb') as f:
         pickle.dump(src_dict, f)
@@ -303,8 +325,8 @@ if __name__ == '__main__':
     parser.add_argument('--params', type=str, default='./params.json')
     parser.add_argument('--interactive', action='store_true')
     parser.add_argument('--plot_loss', action='store_true')
-    parser.add_argument('--loss', type=str, default='./training_loss.log')
-    parser.add_argument('--output_loss', type=str, default='loss.png')
+    parser.add_argument('--training_loss', type=str, default='./training_loss.log')
+    parser.add_argument('--valid_loss', type=str, default='./valid_loss.log')
     
     args = parser.parse_args()
     
@@ -333,15 +355,14 @@ if __name__ == '__main__':
         exit()
     
     if args.plot_loss:
-        pass
+        plot_loss(args.training_loss, 'training_loss.png', 'Training Loss', 'Epoch', 'Loss')
+        plot_loss(args.valid_loss, 'valid_loss.png', 'Validation Loss', 'Epoch', 'Loss')
     
     if args.generate_data:
         generate_data()
     
     if args.train:
         train(args.model, args.params, args.src_dict, args.target_dict, args.reload)
-        
     elif args.eval:
         eval(args.model, args.params, args.src_dict, args.target_dict)
-    
     
