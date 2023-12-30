@@ -356,7 +356,6 @@ if __name__ == '__main__':
     
     if args.plot_loss:
         plot_loss(args.training_loss, 'training_loss.png', 'Training Loss', 'Epoch', 'Loss')
-        plot_loss(args.valid_loss, 'valid_loss.png', 'Validation Loss', 'Epoch', 'Loss')
     
     if args.generate_data:
         generate_data()
