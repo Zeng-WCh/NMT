@@ -6,6 +6,7 @@ import pickle
 
 from pathlib import Path
 from tqdm import tqdm
+from torch.optim.lr_scheduler import StepLR
 from torchtext.data.metrics import bleu_score
 
 from utils import prepare_data, WordDict
@@ -29,10 +30,14 @@ ENC_EMB_DIM = 256
 DEC_EMB_DIM = 256
 ENC_HID_DIM = 256
 DEC_HID_DIM = 256
-ENC_DROPOUT = 0.5
-DEC_DROPOUT = 0.5
+ENC_DROPOUT = 0.6
+DEC_DROPOUT = 0.6
 MAX_LENGTH = 50
-LR = 5e-4
+WEIGHT_DECAY = 0.001
+# Step LR
+LR = 1e-3
+STEP_SIZE = 100
+LR_DECAY_FACTOR = 0.5
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -99,6 +104,7 @@ def eval(model_path, param_path, src_dict_path, target_dict_path):
     with open(model_path, 'rb') as f:
         model.load_state_dict(torch.load(f))
     model = model.to(device)
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=target_dict.word_to_idx('<PAD>'))
     # result, result_tokens =  translate_sentence('Thank you!', src_dict, target_dict, model)
     # print(f'Result: {result}')
     # print(f'Tokens: {result_tokens}')
@@ -216,7 +222,10 @@ def train(model, param_path, src_dict_path, target_dict_path, reload=False):
     with open(param_path, 'w') as f:
         json.dump(model_params, f, indent=4)
     
-    opt = torch.optim.Adam(model.parameters(), lr=LR)
+    opt = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    
+    # Step LR
+    scheduler = StepLR(opt, step_size=STEP_SIZE, gamma=LR_DECAY_FACTOR)
     
     PADDED_TOKENS = target_dict.word_to_idx('<PAD>')
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=PADDED_TOKENS)
@@ -253,6 +262,8 @@ def train(model, param_path, src_dict_path, target_dict_path, reload=False):
             
             epoch_loss = epoch_loss + loss.item()
             torch.cuda.empty_cache()
+        # Update the LR
+        scheduler.step()
         print(f'Epoch: {i}, Loss: {epoch_loss / len(batch)}')
         with open('training_loss.log', 'a') as f:
             f.write(f'Epoch: {i}, Loss: {epoch_loss / len(batch)}\n')
